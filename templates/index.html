@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBR/CBZ a EPUB - Convertidor para Kindle e iPad</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #bdc3c7;
+            font-size: 1.1em;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .upload-section {
+            border: 3px dashed #bdc3c7;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-section:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .upload-section.dragover {
+            border-color: #27ae60;
+            background: #e8f8f0;
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            font-size: 0.9em;
+            color: #95a5a6;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .form-section {
+            margin-bottom: 25px;
+        }
+
+        .form-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .selected-file {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .selected-file .filename {
+            font-weight: 600;
+            color: #2c3e50;
+            word-break: break-all;
+        }
+
+        .selected-file .remove-btn {
+            color: #e74c3c;
+            cursor: pointer;
+            float: right;
+            font-size: 1.2em;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-section {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .progress-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .progress-percent {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .progress-bar-container {
+            background: #ecf0f1;
+            border-radius: 10px;
+            height: 25px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-message {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.95em;
+        }
+
+        .status-list {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .status-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #ecf0f1;
+            color: #2c3e50;
+            font-size: 0.9em;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-item.completed {
+            color: #27ae60;
+        }
+
+        .download-section {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+            padding: 25px;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            border-radius: 15px;
+            color: white;
+        }
+
+        .download-section.active {
+            display: block;
+        }
+
+        .download-section h3 {
+            margin-bottom: 10px;
+        }
+
+        .download-section p {
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .btn-download {
+            display: inline-block;
+            padding: 15px 50px;
+            background: white;
+            color: #27ae60;
+            font-size: 1.1em;
+            font-weight: 700;
+            border-radius: 10px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .btn-download:hover {
+            transform: scale(1.05);
+        }
+
+        .error-message {
+            display: none;
+            padding: 15px;
+            background: #fee;
+            border: 2px solid #e74c3c;
+            border-radius: 8px;
+            color: #c0392b;
+            margin-top: 20px;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #95a5a6;
+            font-size: 0.9em;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                border-radius: 0;
+            }
+
+            .header h1 {
+                font-size: 1.6em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .upload-section {
+                padding: 25px;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CBR/CBZ a EPUB</h1>
+            <p>Convertidor profesional para Kindle e iPad</p>
+        </div>
+
+        <div class="content">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="upload-section" id="uploadSection">
+                    <div class="upload-icon">&#128196;</div>
+                    <div class="upload-text">Arrastra tu archivo CBR o CBZ aqui</div>
+                    <div class="upload-hint">o haz clic para seleccionar</div>
+                    <input type="file" id="fileInput" name="file" accept=".cbr,.cbz" class="file-input">
+                </div>
+
+                <div class="selected-file" id="selectedFile">
+                    <span class="remove-btn" onclick="removeFile()">&times;</span>
+                    <div class="filename" id="fileName"></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Datos del libro</h3>
+
+                    <div class="form-group">
+                        <label for="title">Titulo</label>
+                        <input type="text" id="title" name="title" placeholder="Titulo del libro">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="author">Autor</label>
+                        <input type="text" id="author" name="author" placeholder="Desconocido" value="Desconocido">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="convertBtn" disabled>
+                    Convertir a EPUB
+                </button>
+            </form>
+
+            <div class="progress-section" id="progressSection">
+                <div class="progress-header">
+                    <span class="progress-title">Convirtiendo...</span>
+                    <span class="progress-percent" id="progressPercent">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="progress-message" id="progressMessage">Iniciando...</div>
+                <div class="status-list" id="statusList"></div>
+            </div>
+
+            <div class="download-section" id="downloadSection">
+                <h3>&#9986; Conversion completada!</h3>
+                <p id="fileSize"></p>
+                <a href="#" class="btn-download" id="downloadBtn">Descargar EPUB</a>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <div class="footer">
+            CBR/CBZ a EPUB - Optimizado para Kindle e iPad
+        </div>
+    </div>
+
+    <script>
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        const selectedFile = document.getElementById('selectedFile');
+        const fileName = document.getElementById('fileName');
+        const titleInput = document.getElementById('title');
+        const convertBtn = document.getElementById('convertBtn');
+        const progressSection = document.getElementById('progressSection');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressMessage = document.getElementById('progressMessage');
+        const statusList = document.getElementById('statusList');
+        const downloadSection = document.getElementById('downloadSection');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const fileSize = document.getElementById('fileSize');
+        const errorMessage = document.getElementById('errorMessage');
+
+        let currentTaskId = null;
+
+        // Drag and drop handlers
+        uploadSection.addEventListener('click', () => fileInput.click());
+
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            const extension = file.name.split('.').pop().toLowerCase();
+            if (!['cbr', 'cbz'].includes(extension)) {
+                showError('Formato no soportado. Usar CBR o CBZ.');
+                return;
+            }
+
+            fileName.textContent = file.name;
+            selectedFile.style.display = 'block';
+            convertBtn.disabled = false;
+
+            if (!titleInput.value) {
+                const baseName = file.name.replace(/\.(cbr|cbz)$/i, '');
+                titleInput.value = baseName;
+            }
+
+            hideError();
+        }
+
+        function removeFile() {
+            fileInput.value = '';
+            selectedFile.style.display = 'none';
+            convertBtn.disabled = true;
+            titleInput.value = '';
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!fileInput.files[0]) {
+                showError('Seleccionar un archivo CBR o CBZ.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('title', titleInput.value || 'Untitled');
+            formData.append('author', document.getElementById('author').value || 'Desconocido');
+
+            convertBtn.disabled = true;
+            convertBtn.textContent = 'Convirtiendo...';
+            progressSection.classList.add('active');
+            downloadSection.classList.remove('active');
+            hideError();
+            statusList.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentTaskId = data.task_id;
+                    startPolling();
+                } else {
+                    showError(data.error || 'Error en la conversion');
+                    resetUI();
+                }
+            } catch (error) {
+                showError('Error de conexion: ' + error.message);
+                resetUI();
+            }
+        });
+
+        function startPolling() {
+            const pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/status/${currentTaskId}`);
+                    const data = await response.json();
+
+                    updateProgress(data);
+
+                    if (data.status === 'completed') {
+                        clearInterval(pollInterval);
+                        showDownload(data);
+                        resetUI();
+                    } else if (data.status === 'error') {
+                        clearInterval(pollInterval);
+                        showError(data.message || 'Error en la conversion');
+                        resetUI();
+                    }
+                } catch (error) {
+                    console.error('Poll error:', error);
+                }
+            }, 500);
+        }
+
+        function updateProgress(data) {
+            progressBar.style.width = data.progress + '%';
+            progressPercent.textContent = data.progress + '%';
+            progressMessage.textContent = data.message || 'Procesando...';
+
+            const statusItem = document.createElement('div');
+            statusItem.className = 'status-item' + (data.status === 'completed' ? ' completed' : '');
+            statusItem.textContent = `${data.progress}% - ${data.message}`;
+            statusList.appendChild(statusItem);
+            statusList.scrollTop = statusList.scrollHeight;
+        }
+
+        function showDownload(data) {
+            progressSection.classList.remove('active');
+            downloadSection.classList.add('active');
+            fileSize.textContent = `Tamano: ${data.size_mb || '?'} MB`;
+            downloadBtn.href = `/api/download/${currentTaskId}`;
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('active');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('active');
+        }
+
+        function resetUI() {
+            convertBtn.disabled = false;
+            convertBtn.textContent = 'Convertir a EPUB';
+            progressSection.classList.remove('active');
+        }
+    </script>
+</body>
+</html>
