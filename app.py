@@ -229,7 +229,7 @@ def request_entity_too_large(error):
 
 if __name__ == '__main__':
     import os
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5001))
     print("=" * 50)
     print("  CBR/CBZ a EPUB - Web Application")
     print(f"  http://localhost:{port}")
